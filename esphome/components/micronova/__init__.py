@@ -32,6 +32,7 @@ def _get_data() -> MicronovaData:
 
 CONF_MICRONOVA_ID = "micronova_id"
 CONF_ENABLE_RX_PIN = "enable_rx_pin"
+CONF_ECHO = "echo"
 CONF_MEMORY_LOCATION = "memory_location"
 CONF_MEMORY_ADDRESS = "memory_address"
 DEFAULT_POLLING_INTERVAL = "60s"
@@ -44,18 +45,17 @@ MicroNovaListener = micronova_ns.class_("MicroNovaListener", cg.PollingComponent
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(MicroNova),
-        cv.Required(CONF_ENABLE_RX_PIN): pins.gpio_output_pin_schema,
+        cv.Optional(CONF_ENABLE_RX_PIN): pins.gpio_output_pin_schema,
+        cv.Optional(CONF_ECHO, default=False): cv.boolean,
     }
 ).extend(uart.UART_DEVICE_SCHEMA)
 
 FINAL_VALIDATE_SCHEMA = uart.final_validate_device_schema(
     DOMAIN,
-    baud_rate=1200,
     require_rx=True,
     require_tx=True,
     data_bits=8,
     parity="NONE",
-    stop_bits=2,
 )
 
 
@@ -104,8 +104,12 @@ async def to_code_micronova_listener(
 
 
 async def to_code(config: ConfigType) -> None:
-    enable_rx_pin = await cg.gpio_pin_expression(config[CONF_ENABLE_RX_PIN])
-    await uart.new_uart_component(config, enable_rx_pin)
+    var = await uart.new_uart_component(config)
+    if enable_rx_pin_config := config.get(CONF_ENABLE_RX_PIN):
+        enable_rx_pin = await cg.gpio_pin_expression(enable_rx_pin_config)
+        cg.add(var.set_enable_rx_pin(enable_rx_pin))
+    if config[CONF_ECHO]:
+        cg.add(var.set_echo(True))
     CORE.add_job(_final_step)
 
 

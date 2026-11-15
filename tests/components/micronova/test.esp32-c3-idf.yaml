@@ -1,0 +1,8 @@
+# Single-wire interface without RX gating (e.g. NAVEL INSIDE port at 19200 baud)
+packages:
+  uart_19200: !include ../../test_build_components/common/uart_19200/esp32-c3-idf.yaml
+
+micronova:
+  echo: true
+
+<<: !include common.yaml

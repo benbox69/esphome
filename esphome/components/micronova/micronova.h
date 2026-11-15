@@ -60,7 +60,9 @@ class MicroNovaListener : public MicroNovaBaseListener, public PollingComponent 
 // Main component class
 class MicroNova final : public Component, public uart::UARTDevice {
  public:
-  MicroNova(GPIOPin *enable_rx_pin) : enable_rx_pin_(enable_rx_pin) {}
+  void set_enable_rx_pin(GPIOPin *enable_rx_pin) { this->enable_rx_pin_ = enable_rx_pin; }
+  /// Set when the interface receives its own transmitted bytes (single-wire bus without RX gating)
+  void set_echo(bool echo) { this->echo_ = echo; }
 
   void setup() override;
   void loop() override;
@@ -92,7 +94,10 @@ class MicroNova final : public Component, public uart::UARTDevice {
   void request_update_listeners_();
 #endif
 
-  GPIOPin *enable_rx_pin_;
+  GPIOPin *enable_rx_pin_{nullptr};
+  bool echo_{false};
+  uint8_t tx_data_[4]{};  ///< Bytes of the current command, compared with the echo
+  uint8_t tx_len_{0};
 
 #ifdef USE_MICRONOVA_WRITER
   StaticRingBuffer<MicroNovaCommand, WRITE_QUEUE_SIZE> write_queue_;

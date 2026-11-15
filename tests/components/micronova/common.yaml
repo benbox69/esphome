@@ -1,6 +1,3 @@
-micronova:
-  enable_rx_pin: ${enable_rx_pin}
-
 button:
   - platform: micronova
     custom_button:
