@@ -109,7 +109,7 @@ async def to_code(config: ConfigType) -> None:
         enable_rx_pin = await cg.gpio_pin_expression(enable_rx_pin_config)
         cg.add(var.set_enable_rx_pin(enable_rx_pin))
     if config[CONF_ECHO]:
-        cg.add(var.set_echo(True))
+        cg.add_define("USE_MICRONOVA_ECHO")
     CORE.add_job(_final_step)
 
 
