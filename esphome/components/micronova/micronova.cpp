@@ -37,7 +37,9 @@ void MicroNova::setup() {
 void MicroNova::dump_config() {
   ESP_LOGCONFIG(TAG, "MicroNova:");
   LOG_PIN("  Enable RX Pin: ", this->enable_rx_pin_);
-  ESP_LOGCONFIG(TAG, "  Echo: %s", YESNO(this->echo_));
+#ifdef USE_MICRONOVA_ECHO
+  ESP_LOGCONFIG(TAG, "  Echo: YES");
+#endif
 }
 
 #ifdef MICRONOVA_LISTENER_COUNT
@@ -59,8 +61,12 @@ void MicroNova::loop() {
   // Check if we're processing a command and waiting for reply
   if (this->reply_pending_) {
     // Check if all reply bytes have arrived
-    // With echo, the transmitted bytes are received before the stove reply
-    if (this->available() >= STOVE_REPLY_SIZE + (this->echo_ ? this->tx_len_ : 0)) {
+#ifdef USE_MICRONOVA_ECHO
+    const size_t reply_size = STOVE_REPLY_SIZE + this->tx_len_;
+#else
+    const size_t reply_size = STOVE_REPLY_SIZE;
+#endif
+    if (this->available() >= reply_size) {
 #ifdef MICRONOVA_LISTENER_COUNT
       int stove_reply_value = this->read_stove_reply_();
       if (this->current_command_.is_write()) {
@@ -156,8 +162,10 @@ void MicroNova::send_current_command_() {
     ESP_LOGV(TAG, "Sending read request [%02X,%02X]", write_data[0], write_data[1]);
   }
 
+#ifdef USE_MICRONOVA_ECHO
   memcpy(this->tx_data_, write_data, write_len);
   this->tx_len_ = write_len;
+#endif
 
   if (this->enable_rx_pin_ != nullptr)
     this->enable_rx_pin_->digital_write(true);
@@ -173,14 +181,14 @@ void MicroNova::send_current_command_() {
 int MicroNova::read_stove_reply_() {
   uint8_t reply_data[2] = {0, 0};
 
-  if (this->echo_) {
-    uint8_t echo_data[4] = {0, 0, 0, 0};
-    this->read_array(echo_data, this->tx_len_);
-    if (memcmp(echo_data, this->tx_data_, this->tx_len_) != 0) {
-      ESP_LOGW(TAG, "Unexpected echo [%02X,%02X,...] for command [%02X,%02X,...]", echo_data[0], echo_data[1],
-               this->tx_data_[0], this->tx_data_[1]);
-    }
+#ifdef USE_MICRONOVA_ECHO
+  uint8_t echo_data[4] = {0, 0, 0, 0};
+  this->read_array(echo_data, this->tx_len_);
+  if (memcmp(echo_data, this->tx_data_, this->tx_len_) != 0) {
+    ESP_LOGW(TAG, "Unexpected echo [%02X,%02X,...] for command [%02X,%02X,...]", echo_data[0], echo_data[1],
+             this->tx_data_[0], this->tx_data_[1]);
   }
+#endif
 
   this->read_array(reply_data, 2);
 
