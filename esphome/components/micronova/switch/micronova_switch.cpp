@@ -2,7 +2,7 @@
 
 namespace esphome::micronova {
 
-ESPHOME_LOG_TAG(TAG, "micronova.switch");
+static const char *const TAG = "micronova.switch";
 
 void MicroNovaSwitch::dump_config() {
   LOG_SWITCH("", "Micronova switch", this);

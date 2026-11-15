@@ -1,10 +1,9 @@
 #include "micronova.h"
-#include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 
 namespace esphome::micronova {
 
-ESPHOME_LOG_TAG(TAG, "micronova");
+static const char *const TAG = "micronova";
 static constexpr uint8_t STOVE_REPLY_SIZE = 2;
 static constexpr uint32_t STOVE_REPLY_TIMEOUT = 200;  // ms
 static constexpr uint8_t WRITE_BIT = 1 << 7;          // 0x80
@@ -149,8 +148,9 @@ void MicroNova::send_current_command_() {
     write_len = 4;
     write_data[2] = this->current_command_.data;
     // calculate checksum
-    write_data[3] = sum_bytes(write_data, 3);
-    ESP_LOGV_HEX(TAG, write_data, sizeof(write_data), sizeof(write_data), "Sending write request [%s]");
+    write_data[3] = write_data[0] + write_data[1] + write_data[2];
+    ESP_LOGV(TAG, "Sending write request [%02X,%02X,%02X,%02X]", write_data[0], write_data[1], write_data[2],
+             write_data[3]);
   } else {
     write_len = 2;
     ESP_LOGV(TAG, "Sending read request [%02X,%02X]", write_data[0], write_data[1]);

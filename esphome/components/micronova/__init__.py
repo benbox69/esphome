@@ -4,6 +4,7 @@ from esphome import pins
 import esphome.codegen as cg
 from esphome.components import uart
 import esphome.config_validation as cv
+from esphome.const import CONF_ID
 from esphome.core import CORE, coroutine_with_priority
 from esphome.coroutine import CoroPriority
 from esphome.cpp_generator import MockObj
@@ -30,7 +31,7 @@ def _get_data() -> MicronovaData:
     return CORE.data[DOMAIN]
 
 
-CONF_MICRONOVA_ID = "micronova_id"
+CONF_MICRONOVA_ID = f"{DOMAIN}_id"
 CONF_ENABLE_RX_PIN = "enable_rx_pin"
 CONF_ECHO = "echo"
 CONF_MEMORY_LOCATION = "memory_location"
@@ -104,7 +105,9 @@ async def to_code_micronova_listener(
 
 
 async def to_code(config: ConfigType) -> None:
-    var = await uart.new_uart_component(config)
+    var = cg.new_Pvariable(config[CONF_ID])
+    await cg.register_component(var, config)
+    await uart.register_uart_device(var, config)
     if enable_rx_pin_config := config.get(CONF_ENABLE_RX_PIN):
         enable_rx_pin = await cg.gpio_pin_expression(enable_rx_pin_config)
         cg.add(var.set_enable_rx_pin(enable_rx_pin))
